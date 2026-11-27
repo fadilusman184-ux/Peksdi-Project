@@ -14,6 +14,14 @@ public:
 		isAddCallback = false;
 
 		gd.isHardCore = true;
+
+		// 1 VS 1 is a standalone duel mode: short map, no towers,
+		// no lane minions, and no respawn. Other modes keep their
+		// original configuration.
+		setMap(1);
+		setTower(false, false);
+		setFlog(false, false);
+		setHero(false);
 	}
 
 	void onInitHeros()
@@ -79,6 +87,18 @@ public:
 
 	void onCharacterDead(CharacterBase *c)
 	{
+		// Only the actual two duelists can decide the result. Clones,
+		// summons, bullets, etc. must never end the 1 VS 1 match.
+		if (!c || !c->isPlayerOrCom())
+			return;
+
+		auto layer = getGameLayer();
+		if (!layer || layer->_isGameOver)
+			return;
+
+		// In 1 VS 1, the first death immediately ends the match.
+		// Player death = loss; enemy COM death = win.
+		layer->onGameOver(!c->isPlayer());
 	}
 
 	void onCharacterReborn(CharacterBase *c)
