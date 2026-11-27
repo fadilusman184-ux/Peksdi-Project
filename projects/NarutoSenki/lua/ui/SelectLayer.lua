@@ -232,7 +232,7 @@ function SelectLayer:init()
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
         -- call c++ layer function
-        listener = function() self:onGameStart() end
+        listener = function() self:openMapSelect() end
     })
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
@@ -251,7 +251,7 @@ function SelectLayer:init()
     -- Desktop return button
     if _G.platform == 'desktop' then
         local skill_btn = ui.newImageMenuItem({
-            image = '#return_btn.png',
+            image = 'UI/return_btn.png',
             listener = backToStartMenu
         })
         local menu3 = ui.newMenu({skill_btn})
@@ -486,4 +486,105 @@ function backToStartMenu()
     hook.registerInitHandlerOnly(menuLayer)
     menuScene:addChild(menuLayer)
     director.replaceSceneWithFade(menuScene, 1)
+end
+
+
+-- Map Select: uses the original map background images and existing menu atlas.
+-- The Character Select layer remains alive underneath this child layer, so the
+-- selected characters and mode settings are preserved.
+function SelectLayer:openMapSelect()
+    if self._mapSelectLayer then return end
+
+    local width, height = display.width, display.height
+    local mapCount = 5 -- Maps/1.tmx ... Maps/5.tmx are included in this source.
+    self._selectedMapId = self._selectedMapId or 1
+
+    local layer = display.newLayer()
+    self:addChild(layer, 1000)
+    self._mapSelectLayer = layer
+
+    local bg = display.newSprite('blue_bg.png', 0, 0)
+    bg:setAnchorPoint(0, 0)
+    bg:fullScreen()
+    layer:addChild(bg, -2)
+
+    local barTop = display.newSprite('menu_bar3.png')
+    barTop:setAnchorPoint(0, 0)
+    barTop:setPosition(0, height - barTop:getContentSize().height)
+    barTop:fullScreen()
+    layer:addChild(barTop, 1)
+
+    local barBottom = display.newSprite('menu_bar2.png')
+    barBottom:setAnchorPoint(0, 0)
+    barBottom:fullScreen()
+    layer:addChild(barBottom, 1)
+
+    local title = CCLabelTTF:create('SELECT MAP', 'Arial', 28)
+    title:setPosition(width / 2, height - 38)
+    layer:addChild(title, 5)
+
+    local preview = nil
+    local mapLabel = nil
+    local function refreshPreview()
+        if preview then preview:removeFromParentAndCleanup(true) end
+        if mapLabel then mapLabel:removeFromParentAndCleanup(true) end
+
+        preview = display.newSprite(string.format('Maps/map_bg%d.png', self._selectedMapId))
+        preview:setPosition(width / 2, height / 2 + 12)
+        local size = preview:getContentSize()
+        local maxW, maxH = width * 0.72, height * 0.58
+        local scale = math.min(maxW / size.width, maxH / size.height)
+        preview:setScale(scale)
+        layer:addChild(preview, 3)
+
+        mapLabel = CCLabelTTF:create(string.format('MAP %d / %d', self._selectedMapId, mapCount), 'Arial', 22)
+        mapLabel:setPosition(width / 2, 82)
+        layer:addChild(mapLabel, 5)
+    end
+
+    local prev = ui.newImageMenuItem({
+        image = '#page1_off.png',
+        imageSelected = '#page1_on.png',
+        listener = function()
+            self._selectedMapId = self._selectedMapId - 1
+            if self._selectedMapId < 1 then self._selectedMapId = mapCount end
+            refreshPreview()
+        end
+    })
+    local next = ui.newImageMenuItem({
+        image = '#page2_off.png',
+        imageSelected = '#page2_on.png',
+        listener = function()
+            self._selectedMapId = self._selectedMapId + 1
+            if self._selectedMapId > mapCount then self._selectedMapId = 1 end
+            refreshPreview()
+        end
+    })
+    local arrows = ui.newMenu({prev, next})
+    arrows:alignItemsHorizontallyWithPadding(90)
+    arrows:setPosition(width / 2, 42)
+    layer:addChild(arrows, 10)
+
+    local back = ui.newImageMenuItem({
+        image = 'UI/return_btn.png',
+        listener = function()
+            layer:removeFromParentAndCleanup(true)
+            self._mapSelectLayer = nil
+        end
+    })
+    local start = ui.newImageMenuItem({
+        image = '#start_btn.png',
+        listener = function()
+            local selected = self._selectedMapId or 1
+            self:setSelectedMap(selected)
+            self._mapSelectLayer = nil
+            self:onGameStart()
+        end
+    })
+    local actions = ui.newMenu({back, start})
+    actions:alignItemsHorizontallyWithPadding(28)
+    actions:setPosition(width - 150, 42)
+    layer:addChild(actions, 10)
+
+    refreshPreview()
 end
