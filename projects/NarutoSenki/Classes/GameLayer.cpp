@@ -159,14 +159,14 @@ bool GameLayer::init()
 
 void GameLayer::onEnter()
 {
+	Layer::onEnter();
+
+	// Returning from the Result scene must not tear down the game layer while
+	// Director is still executing popScene()/onEnter(). Defer cleanup until the
+	// scene transition stack has completed this callback.
 	if (_isExiting)
 	{
-		// Do not replace the running scene from inside onEnter(). In Boss mode
-		// this path is reached while GameOver::onLeft() is popping its result
-		// scene; replacing the scene synchronously here can invalidate the
-		// Director's scene stack and cause an Android force close.
-		Layer::onEnter();
-		scheduleOnce(schedule_selector(GameLayer::onLeftDeferred), 0.0f);
+		scheduleOnce(schedule_selector(GameLayer::cleanupAfterReturn), 0.0f);
 		return;
 	}
 
@@ -178,19 +178,10 @@ void GameLayer::onEnter()
 		}
 	}
 
-	Layer::onEnter();
-
 	if (_isSurrender)
 	{
 		onGameOver(false);
 	}
-}
-
-void GameLayer::onLeftDeferred(float dt)
-{
-	(void)dt;
-	if (_isExiting)
-		onLeft();
 }
 
 void GameLayer::onExit()
@@ -860,6 +851,15 @@ void GameLayer::onGameOver(bool isWin)
 	layer->setWin(isWin);
 	pscene->addChild(layer);
 	Director::sharedDirector()->pushScene(pscene);
+}
+
+void GameLayer::cleanupAfterReturn(float dt)
+{
+	if (!_isExiting)
+		return;
+
+	_isExiting = false;
+	onLeft();
 }
 
 void GameLayer::onLeft()

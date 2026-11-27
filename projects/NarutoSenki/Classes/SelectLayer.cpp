@@ -43,6 +43,10 @@ void SelectLayer::onGameStart()
 
 	auto gameModeHandler = getGameModeHandler();
 	gameModeHandler->selectLayer = this;
+	// Persist Boss mode's Guardian choice before this SelectLayer is destroyed
+	// by the loading-scene replacement.
+	if (getGameMode() == GameMode::Boss)
+		gameModeHandler->setSelectedGuardian(_enemySelect);
 	gameModeHandler->onInitHeros();
 	loadLayer->preloadAudio();
 	loadScene->addChild(loadLayer);
