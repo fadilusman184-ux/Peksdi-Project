@@ -352,6 +352,10 @@ void LoadLayer::onLoadFinish(float dt)
 	_bgLayer->initBg(_gameLayer->mapId);
 
 	_hudLayer->initHeroInterface();
+	// Guardian minimap icons must be added only after initHeroInterface()
+	// has created the minimap layer. Boss mode spawns its Guardian earlier.
+	if (getGameMode() == GameMode::Boss)
+		_hudLayer->addMapIcon();
 	_gameLayer->invokeAllCallbacks();
 
 	gameScene->addChild(_bgLayer, kBgOrder);

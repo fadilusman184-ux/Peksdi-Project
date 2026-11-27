@@ -265,8 +265,9 @@ void GameLayer::initGard()
 	guardian->doAI();
 
 	_CharacterArray.push_back(guardian);
-	_hudLayer->addMapIcon();
-
+	// The minimap layer is created by HudLayer::initHeroInterface().
+	// Do not add the Guardian icon here: GameLayer::initHeros() runs before
+	// that HUD initialization and miniLayer would still be null.
 	_hasSpawnedGuardian = true;
 }
 
