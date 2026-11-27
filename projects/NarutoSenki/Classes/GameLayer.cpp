@@ -858,6 +858,24 @@ void GameLayer::onLeft()
 		ac->unscheduleAllSelectors();
 	}
 
+	// Boss mode owns a live Guardian with its own AI/actions and voice assets.
+	// Stop and detach that Guardian before unloading its sprite/audio resources;
+	// otherwise a delayed AI/action callback can touch resources while Result
+	// returns to the Lua Main Menu scene. Keep this cleanup Boss-only.
+	if (getGameMode() == GameMode::Boss)
+	{
+		SimpleAudioEngine::sharedEngine()->stopAllEffects();
+		for (auto character : _CharacterArray)
+		{
+			if (!character)
+				continue;
+			character->unscheduleAllSelectors();
+			character->stopAllActions();
+			if (character->isGuardian())
+				character->removeFromParentAndCleanup(true);
+		}
+	}
+
 	LoadLayer::unloadAllCharsIMG(_CharacterArray);
 	removeSprites(format("Unit/Tower/Tower{}.plist", mapId));
 
