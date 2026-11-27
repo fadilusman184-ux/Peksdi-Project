@@ -1,8 +1,15 @@
 #pragma once
 #include "GameMode/IGameModeHandler.hpp"
+#include <string>
 
 class ModeBoss : public IGameModeHandler
 {
+private:
+	// Keep the selected Guardian independently of SelectLayer. The selection
+	// scene is destroyed when loading starts, so a pointer into that layer
+	// would otherwise fall back to Han.
+	std::string selectedGuardian = GuardianEnum::Han;
+
 public:
 	void init()
 	{
@@ -44,10 +51,17 @@ public:
 
 	void onCharacterReborn(CharacterBase *c) {}
 
+	void setSelectedGuardian(const char *name) override
+	{
+		if (name && (std::string(name) == GuardianEnum::Han ||
+					 std::string(name) == GuardianEnum::Roshi))
+			selectedGuardian = name;
+		else
+			selectedGuardian = GuardianEnum::Han;
+	}
+
 	const char *getSelectedGuardian() const override
 	{
-		if (selectLayer && selectLayer->_enemySelect)
-			return selectLayer->_enemySelect;
-		return GuardianEnum::Han;
+		return selectedGuardian.c_str();
 	}
 };
