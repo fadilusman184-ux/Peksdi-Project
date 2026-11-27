@@ -6,6 +6,7 @@ function SelectLayer:init()
 
     self.mode = _G.mode
     self.isOneVsOne = self.mode == GameMode.OneVsOne
+    self.isBossMode = self.mode == GameMode.Boss
     self.enableCustomSelect = _G.enableCustomSelect
     if self.mode == GameMode.Clone or self.mode == GameMode.OneVsOne then
         self.enableCustomSelect = false
@@ -251,8 +252,18 @@ function SelectLayer:init()
 
     local start_btn = ui.newImageMenuItem({
         image = '#start_btn.png',
-        -- call c++ layer function
-        listener = function() self:openMapSelect() end
+        -- Boss mode requires the player to finish character selection first.
+        listener = function()
+            if not self._playerSelect then
+                self:setTip('Please select your character first')
+                return
+            end
+            if self.isBossMode then
+                self:openBossSelect()
+            else
+                self:openMapSelect()
+            end
+        end
     })
     local menu = ui.newMenu({start_btn})
     menu:setAnchorPoint(0, 0)
@@ -555,6 +566,105 @@ function backToStartMenu()
 end
 
 
+-- Boss Guardian Select. This overlay is exclusive to Boss mode.
+-- RETURN closes this overlay and keeps the player's character selection.
+function SelectLayer:openBossSelect()
+    if not self.isBossMode or self._bossSelectLayer then return end
+    if not self._playerSelect then
+        self:setTip('Please select your character first')
+        return
+    end
+
+    local width, height = display.width, display.height
+    local layer = display.newLayer()
+    self:addChild(layer, 900)
+    self._bossSelectLayer = layer
+
+    local bg = display.newSprite('blue_bg.png', 0, 0)
+    bg:setAnchorPoint(0, 0)
+    bg:fullScreen()
+    layer:addChild(bg, -2)
+
+    local barTop = display.newSprite('menu_bar3.png')
+    barTop:setAnchorPoint(0, 0)
+    barTop:setPosition(0, height - barTop:getContentSize().height)
+    barTop:fullScreen()
+    layer:addChild(barTop, 1)
+
+    local barBottom = display.newSprite('menu_bar2.png')
+    barBottom:setAnchorPoint(0, 0)
+    barBottom:fullScreen()
+    layer:addChild(barBottom, 1)
+
+    local title = CCLabelTTF:create('SELECT GUARDIAN', 'Arial', 28)
+    title:setPosition(width / 2, height - 38)
+    layer:addChild(title, 5)
+
+    local selected = self._bossGuardian
+    local hanLabel, roshiLabel
+    local function refreshSelection()
+        if hanLabel then hanLabel:setColor(selected == 'Han' and ccc3(255, 220, 80) or ccc3(255, 255, 255)) end
+        if roshiLabel then roshiLabel:setColor(selected == 'Roshi' and ccc3(255, 220, 80) or ccc3(255, 255, 255)) end
+    end
+
+    local hanItem = ui.newImageMenuItem({
+        image = '#Naruto_half.png',
+        listener = function()
+            selected = 'Han'
+            self._bossGuardian = selected
+            self:setEnemySelect(selected)
+            refreshSelection()
+        end
+    })
+    local roshiItem = ui.newImageMenuItem({
+        image = '#RockLee_half.png',
+        listener = function()
+            selected = 'Roshi'
+            self._bossGuardian = selected
+            self:setEnemySelect(selected)
+            refreshSelection()
+        end
+    })
+
+    local guardians = ui.newMenu({hanItem, roshiItem})
+    guardians:alignItemsHorizontallyWithPadding(110)
+    guardians:setPosition(width / 2, height / 2 + 15)
+    layer:addChild(guardians, 5)
+
+    hanLabel = CCLabelTTF:create('HAN', 'Arial', 23)
+    hanLabel:setPosition(width / 2 - 75, height / 2 - 65)
+    layer:addChild(hanLabel, 6)
+    roshiLabel = CCLabelTTF:create('ROSHI', 'Arial', 23)
+    roshiLabel:setPosition(width / 2 + 75, height / 2 - 65)
+    layer:addChild(roshiLabel, 6)
+    refreshSelection()
+
+    local back = ui.newImageMenuItem({
+        image = 'UI/return_btn.png',
+        listener = function()
+            layer:removeFromParentAndCleanup(true)
+            self._bossSelectLayer = nil
+        end
+    })
+    local start = ui.newImageMenuItem({
+        image = '#start_btn.png',
+        listener = function()
+            if selected ~= 'Han' and selected ~= 'Roshi' then
+                self:setTip('Please select Han or Roshi')
+                return
+            end
+            self:setEnemySelect(selected)
+            layer:removeFromParentAndCleanup(true)
+            self._bossSelectLayer = nil
+            self:openMapSelect()
+        end
+    })
+    local actions = ui.newMenu({back, start})
+    actions:alignItemsHorizontallyWithPadding(28)
+    actions:setPosition(width - 150, 42)
+    layer:addChild(actions, 10)
+end
+
 -- Map Select: uses the original map background images and existing menu atlas.
 -- The Character Select layer remains alive underneath this child layer, so the
 -- selected characters and mode settings are preserved.
@@ -636,6 +746,9 @@ function SelectLayer:openMapSelect()
         listener = function()
             layer:removeFromParentAndCleanup(true)
             self._mapSelectLayer = nil
+            if self.isBossMode then
+                self:openBossSelect()
+            end
         end
     })
     local start = ui.newImageMenuItem({
