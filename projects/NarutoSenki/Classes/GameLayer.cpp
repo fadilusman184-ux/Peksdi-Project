@@ -238,9 +238,7 @@ void GameLayer::initTileMap()
 
 void GameLayer::initGard()
 {
-	setRand();
-	int index = random(2);
-	auto guardianName = index == 0 ? GuardianEnum::Roshi : GuardianEnum::Han;
+	const char *guardianName = getGameModeHandler()->getSelectedGuardian();
 	auto guardianGroup = playerGroup == Group::Konoha ? Group::Akatsuki : Group::Konoha;
 	auto guardian = Provider::create(guardianName, Role::Com, guardianGroup);
 
@@ -349,8 +347,12 @@ void GameLayer::initHeros()
 		i++;
 	}
 
-	// 1 VS 1 has no towers. Every other mode keeps the original tower setup.
-	if (getGameMode() != GameMode::OneVsOne)
+	// Boss mode creates exactly one selected Guardian opposite the player.
+	if (getGameMode() == GameMode::Boss)
+		initGard();
+
+	// Duel modes have no towers. Every other mode keeps the original setup.
+	if (getGameMode() != GameMode::OneVsOne && getGameMode() != GameMode::Boss)
 	{
 		// Tower HP bar color depends on currentPlayer group, so towers must be
 		// initialized after at least one hero/player is created.
