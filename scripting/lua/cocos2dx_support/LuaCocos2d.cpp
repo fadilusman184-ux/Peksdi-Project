@@ -67477,6 +67477,39 @@ static int tolua_Cocos2d_SelectLayer_setSelectHero00(lua_State* tolua_S)
 }
 #endif //#ifndef TOLUA_DISABLE
 
+/* method: setEnemySelect of class  SelectLayer */
+#ifndef TOLUA_DISABLE_tolua_Cocos2d_SelectLayer_setEnemySelect00
+static int tolua_Cocos2d_SelectLayer_setEnemySelect00(lua_State* tolua_S)
+{
+#ifndef TOLUA_RELEASE
+ tolua_Error tolua_err;
+ if (
+     !tolua_isusertype(tolua_S,1,"SelectLayer",0,&tolua_err) ||
+     !tolua_isstring(tolua_S,2,0,&tolua_err) ||
+     !tolua_isnoobj(tolua_S,3,&tolua_err)
+ )
+  goto tolua_lerror;
+ else
+#endif
+ {
+  SelectLayer* self = (SelectLayer*) tolua_tousertype(tolua_S,1,0);
+  const char* var = ((const char*) tolua_tostring(tolua_S,2,0));
+#ifndef TOLUA_RELEASE
+  if (!self) tolua_error(tolua_S,"invalid 'self' in function 'setEnemySelect'", NULL);
+#endif
+  {
+   self->setEnemySelect(var);
+  }
+ }
+ return 0;
+#ifndef TOLUA_RELEASE
+ tolua_lerror:
+ tolua_error(tolua_S,"#ferror in function 'setEnemySelect'.",&tolua_err);
+ return 0;
+#endif
+}
+#endif //#ifndef TOLUA_DISABLE
+
 /* method: setCom1Select of class  SelectLayer */
 #ifndef TOLUA_DISABLE_tolua_Cocos2d_SelectLayer_setCom1Select00
 static int tolua_Cocos2d_SelectLayer_setCom1Select00(lua_State* tolua_S)
@@ -72095,6 +72128,7 @@ TOLUA_API int tolua_Cocos2d_open (lua_State* tolua_S)
    tolua_function(tolua_S,"delete",tolua_Cocos2d_SelectLayer_delete00);
    tolua_function(tolua_S,"create",tolua_Cocos2d_SelectLayer_create00);
    tolua_function(tolua_S,"setSelectHero",tolua_Cocos2d_SelectLayer_setSelectHero00);
+   tolua_function(tolua_S,"setEnemySelect",tolua_Cocos2d_SelectLayer_setEnemySelect00);
    tolua_function(tolua_S,"setCom1Select",tolua_Cocos2d_SelectLayer_setCom1Select00);
    tolua_function(tolua_S,"setCom2Select",tolua_Cocos2d_SelectLayer_setCom2Select00);
    tolua_function(tolua_S,"setCom3Select",tolua_Cocos2d_SelectLayer_setCom3Select00);
