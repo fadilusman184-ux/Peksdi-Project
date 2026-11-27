@@ -155,6 +155,7 @@ protected:
 	{
 		this->enableKonohaFlogs = enableKonohaFlogs;
 		this->enableAkatsukiFlogs = enableAkatsukiFlogs;
+		this->skipInitFlogs = !enableKonohaFlogs && !enableAkatsukiFlogs;
 		this->flogSpawnDuration = (duration < 5 || duration > 60) ? 15.0f : duration;
 		this->isLimitFlog = maxWaves >= 0;
 		this->maxFlogWaves = maxWaves;
