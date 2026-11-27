@@ -17,6 +17,15 @@ SelectLayer::~SelectLayer()
 		handler->resetCheats();
 }
 
+void SelectLayer::setSelectedMap(int mapId)
+{
+	// Keep the selection in the active game-mode handler. GameLayer reads it
+	// when it creates the TMX map. Invalid values are ignored.
+	if (mapId < 1)
+		return;
+	getGameModeHandler()->setMap(mapId);
+}
+
 void SelectLayer::onGameStart()
 {
 	if (isStart)
