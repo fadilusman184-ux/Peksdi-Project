@@ -157,6 +157,7 @@ public:
 	Group playerGroup;
 	bool _isStarted;
 	bool _isExiting;
+	bool _isGameOver;
 
 	const char *getGuardianGroup()
 	{

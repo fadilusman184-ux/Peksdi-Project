@@ -110,6 +110,7 @@ GameLayer::GameLayer()
 
 	_isStarted = false;
 	_isExiting = false;
+	_isGameOver = false;
 
 	ougisChar = nullptr;
 	controlChar = nullptr;
@@ -203,6 +204,22 @@ bool GameLayer::isHUDInit()
 void GameLayer::initTileMap()
 {
 	setRand();
+
+	// 1 VS 1 uses its own compact duel map. The normal map pool is
+	// untouched, so every other mode keeps the original maps/layout.
+	if (getGameMode() == GameMode::OneVsOne)
+	{
+		mapId = 1; // keep the original background/music set
+		currentMap = TMXTiledMap::create("Maps/1v1.tmx");
+		if (!currentMap)
+		{
+			CCMessageBox("Not found the 1 VS 1 map", "[Error] 1 VS 1 map");
+			return;
+		}
+		addChild(currentMap, kMapOrder);
+		return;
+	}
+
 	int mapCount = getMapCount();
 	if (mapCount == 0)
 	{
@@ -332,9 +349,13 @@ void GameLayer::initHeros()
 		i++;
 	}
 
-	// Tower HP bar color depends on currentPlayer group, so towers must be
-	// initialized after at least one hero/player is created.
-	initTower();
+	// 1 VS 1 has no towers. Every other mode keeps the original tower setup.
+	if (getGameMode() != GameMode::OneVsOne)
+	{
+		// Tower HP bar color depends on currentPlayer group, so towers must be
+		// initialized after at least one hero/player is created.
+		initTower();
+	}
 
 	schedule(schedule_selector(GameLayer::updateViewPoint), 0.00f);
 	scheduleOnce(schedule_selector(GameLayer::playGameOpeningAnimation), 0.5f);
@@ -594,6 +615,9 @@ void GameLayer::removeOugisMark(int type)
 
 void GameLayer::checkTower()
 {
+	if (getGameMode() == GameMode::OneVsOne)
+		return;
+
 	int konohaTowerCount = 0;
 	int akatsukiTowerCount = 0;
 
@@ -784,6 +808,10 @@ void GameLayer::onGear()
 
 void GameLayer::onGameOver(bool isWin)
 {
+	if (_isGameOver)
+		return;
+	_isGameOver = true;
+
 	removeKeyEventHandler();
 
 	if (_isPause)
