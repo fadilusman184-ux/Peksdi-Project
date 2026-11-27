@@ -161,7 +161,12 @@ void GameLayer::onEnter()
 {
 	if (_isExiting)
 	{
-		onLeft();
+		// Do not replace the running scene from inside onEnter(). In Boss mode
+		// this path is reached while GameOver::onLeft() is popping its result
+		// scene; replacing the scene synchronously here can invalidate the
+		// Director's scene stack and cause an Android force close.
+		Layer::onEnter();
+		scheduleOnce(schedule_selector(GameLayer::onLeftDeferred), 0.0f);
 		return;
 	}
 
@@ -179,6 +184,13 @@ void GameLayer::onEnter()
 	{
 		onGameOver(false);
 	}
+}
+
+void GameLayer::onLeftDeferred(float dt)
+{
+	(void)dt;
+	if (_isExiting)
+		onLeft();
 }
 
 void GameLayer::onExit()

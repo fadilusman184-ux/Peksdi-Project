@@ -146,6 +146,7 @@ public:
 	Layer *blend;
 
 	void onLeft();
+	void onLeftDeferred(float dt);
 
 	bool _isSurrender;
 
