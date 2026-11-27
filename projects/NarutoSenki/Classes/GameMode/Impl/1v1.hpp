@@ -18,7 +18,8 @@ public:
 
 	void onInitHeros()
 	{
-		initHeros(1, 1);
+		initHeros(1, 1, nullptr, kDefaultGroup, nullptr, nullptr, nullptr,
+			selectLayer ? selectLayer->_enemySelect : nullptr);
 	}
 
 	void onGameStart()
