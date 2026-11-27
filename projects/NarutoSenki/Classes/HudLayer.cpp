@@ -525,10 +525,12 @@ void HudLayer::initHeroInterface()
 			}
 
 			mi = MiniIcon::create(path, true);
+			if (!mi)
+				continue;
 			mi->_delegate = miniLayer;
+			mi->setCharId(player->getCharId());
 			miniLayer->addChild(mi);
 			mi->updatePosition(player->getSpawnPoint());
-			mi->setCharId(player->getCharId());
 		}
 	}
 
@@ -542,17 +544,24 @@ void HudLayer::initHeroInterface()
 
 void HudLayer::addMapIcon()
 {
+	// Called after initHeroInterface; guard against early or repeated setup.
+	if (!miniLayer || !getGameLayer())
+		return;
+
 	for (auto player : getGameLayer()->_CharacterArray)
 	{
-		if (player->isGuardian())
+		if (player && player->isGuardian())
 		{
+			// Guardian icon creation is guarded by the HUD-ready check above.
 			MiniIcon *mi;
 			const char *path = "guardian_icon.png";
 			mi = MiniIcon::create(path, true);
+			if (!mi)
+				continue;
 			mi->_delegate = miniLayer;
+			mi->setCharId(player->getCharId());
 			miniLayer->addChild(mi);
 			mi->updatePosition(player->getSpawnPoint());
-			mi->setCharId(player->getCharId());
 		}
 	}
 }

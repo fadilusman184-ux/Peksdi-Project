@@ -241,6 +241,11 @@ void GameLayer::initGard()
 	const char *guardianName = getGameModeHandler()->getSelectedGuardian();
 	auto guardianGroup = playerGroup == Group::Konoha ? Group::Akatsuki : Group::Konoha;
 	auto guardian = Provider::create(guardianName, Role::Com, guardianGroup);
+	if (!guardian)
+	{
+		CCLOG("Boss mode: failed to create Guardian '%s'.", guardianName ? guardianName : "(null)");
+		return;
+	}
 
 	if (playerGroup == Group::Konoha)
 	{
@@ -265,8 +270,8 @@ void GameLayer::initGard()
 	guardian->doAI();
 
 	_CharacterArray.push_back(guardian);
-	_hudLayer->addMapIcon();
-
+	// The minimap is created later by HudLayer::initHeroInterface().
+	// LoadLayer adds the Guardian icon once the HUD is ready.
 	_hasSpawnedGuardian = true;
 }
 
@@ -858,10 +863,9 @@ void GameLayer::onLeft()
 		ac->unscheduleAllSelectors();
 	}
 
-	// Boss mode owns a live Guardian with its own AI/actions and voice assets.
-	// Stop and detach that Guardian before unloading its sprite/audio resources;
-	// otherwise a delayed AI/action callback can touch resources while Result
-	// returns to the Lua Main Menu scene. Keep this cleanup Boss-only.
+	// Boss mode has a live Guardian with its own AI/actions and voice assets.
+	// Stop callbacks first, but keep the character pointers alive until their
+	// assets have been unloaded (unloadAllCharsIMG reads each character name).
 	if (getGameMode() == GameMode::Boss)
 	{
 		SimpleAudioEngine::sharedEngine()->stopAllEffects();
@@ -871,12 +875,20 @@ void GameLayer::onLeft()
 				continue;
 			character->unscheduleAllSelectors();
 			character->stopAllActions();
-			if (character->isGuardian())
-				character->removeFromParentAndCleanup(true);
 		}
 	}
 
 	LoadLayer::unloadAllCharsIMG(_CharacterArray);
+
+	// Now it is safe to detach the Guardian; unloading above used its name.
+	if (getGameMode() == GameMode::Boss)
+	{
+		for (auto character : _CharacterArray)
+		{
+			if (character && character->isGuardian())
+				character->removeFromParentAndCleanup(true);
+		}
+	}
 	removeSprites(format("Unit/Tower/Tower{}.plist", mapId));
 
 	if (_isHardCoreGame)
@@ -898,7 +910,16 @@ void GameLayer::onLeft()
 	removeSprites("UI.plist");
 	removeSprites("Map.plist");
 
-	SimpleAudioEngine::sharedEngine()->end();
+	// Keep the audio engine alive in Boss mode: the Lua menu is entered
+	// immediately after this cleanup and plays menu sounds on the same engine.
+	if (getGameMode() == GameMode::Boss)
+	{
+		SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(true);
+	}
+	else
+	{
+		SimpleAudioEngine::sharedEngine()->end();
+	}
 
 	lua_call_func(UiFlowKeys::kOnGameOver);
 }
