@@ -265,9 +265,8 @@ void GameLayer::initGard()
 	guardian->doAI();
 
 	_CharacterArray.push_back(guardian);
-	// The minimap layer is created by HudLayer::initHeroInterface().
-	// Do not add the Guardian icon here: GameLayer::initHeros() runs before
-	// that HUD initialization and miniLayer would still be null.
+	_hudLayer->addMapIcon();
+
 	_hasSpawnedGuardian = true;
 }
 
@@ -857,6 +856,24 @@ void GameLayer::onLeft()
 		auto ac = (Node *)pObject;
 		ac->unscheduleUpdate();
 		ac->unscheduleAllSelectors();
+	}
+
+	// Boss mode owns a live Guardian with its own AI/actions and voice assets.
+	// Stop and detach that Guardian before unloading its sprite/audio resources;
+	// otherwise a delayed AI/action callback can touch resources while Result
+	// returns to the Lua Main Menu scene. Keep this cleanup Boss-only.
+	if (getGameMode() == GameMode::Boss)
+	{
+		SimpleAudioEngine::sharedEngine()->stopAllEffects();
+		for (auto character : _CharacterArray)
+		{
+			if (!character)
+				continue;
+			character->unscheduleAllSelectors();
+			character->stopAllActions();
+			if (character->isGuardian())
+				character->removeFromParentAndCleanup(true);
+		}
 	}
 
 	LoadLayer::unloadAllCharsIMG(_CharacterArray);
