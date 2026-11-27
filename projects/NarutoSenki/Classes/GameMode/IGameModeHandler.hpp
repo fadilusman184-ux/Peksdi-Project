@@ -113,6 +113,7 @@ public:
 	virtual void onCharacterReborn(CharacterBase *c) = 0;
 
 	inline const GameData &getGameData() { return gd; }
+	virtual const char *getSelectedGuardian() const { return GuardianEnum::Han; }
 	inline void setSelectedMap(int id) { selectedMapId = id; }
 	inline int getSelectedMap() const { return selectedMapId; }
 	inline int getOldCheats() { return oldCheats; }
