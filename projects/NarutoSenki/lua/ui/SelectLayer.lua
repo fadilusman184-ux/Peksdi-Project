@@ -5,6 +5,7 @@ function SelectLayer:init()
     log('Initial SelectLayer...')
 
     self.mode = _G.mode
+    self.isOneVsOne = self.mode == GameMode.OneVsOne
     self.enableCustomSelect = _G.enableCustomSelect
     if self.mode == GameMode.Clone or self.mode == GameMode.OneVsOne then
         self.enableCustomSelect = false
@@ -29,6 +30,9 @@ function SelectLayer:init()
 
     self._heroName = nil
     self._heroHalfImage = nil
+    self._enemyHalfImage = nil
+    self._enemyName = nil
+    self._enemySelect = nil
 
     self.pageLayers = {}
     self.pageButtons = {}
@@ -202,6 +206,22 @@ function SelectLayer:init()
 
         self._heroName = heroName
         self._heroHalfImage = heroHalfImage
+    end
+
+    -- 1VS1: show a stationary default enemy portrait on the right.
+    if self.isOneVsOne then
+        local enemyHalf = display.newSprite('#Naruto_half.png')
+        enemyHalf:setAnchorPoint(0, 0)
+        enemyHalf:setPosition(width - enemyHalf:getContentSize().width - 10, 10)
+        enemyHalf:setFlipX(true)
+        self:addChild(enemyHalf, 1)
+        self._enemyHalfImage = enemyHalf
+
+        local enemyName = display.newSprite('#Naruto_font.png')
+        enemyName:setAnchorPoint(0.5, 0)
+        enemyName:setPosition(width - 92, 20)
+        self:addChild(enemyName, 5)
+        self._enemyName = enemyName
     end
 
     local selectBtn = selectButtons[1]
@@ -387,10 +407,71 @@ function SelectLayer:setSelected(btn)
                                             btn:getPositionY() - 2))
     end
 
+    -- 1VS1: select Player 1 first, then select the enemy independently.
+    if self.isOneVsOne then
+        self.selectHero = btn._charName
+        local charName = '#' .. btn._charName
+
+        if not self._playerSelect then
+            if self._heroHalfImage then
+                self._heroHalfImage:removeFromParentAndCleanup(true)
+            end
+            self._heroHalfImage = display.newSprite(charName .. '_half.png', 10, 10)
+            self._heroHalfImage:setAnchorPoint(CCPoint(0, 0))
+            self:addChild(self._heroHalfImage, 1)
+
+            if self._heroName then
+                self._heroName:removeFromParentAndCleanup(true)
+            end
+            self._heroName = display.newSprite(charName .. '_font.png', 100, 20)
+            self._heroName:setAnchorPoint(CCPoint(0.5, 0))
+            self:addChild(self._heroName, 5)
+
+            if btn._clickTime >= 2 then
+                self:setSelectHero(btn._charName)
+                self._playerSelect = btn._charName
+                if self._selectImg then
+                    self._selectImg:setDisplayFrame(display.newSpriteFrame('2p.png'))
+                end
+                log('1VS1 Player selected: ' .. btn._charName)
+            end
+        elseif not self._enemySelect then
+            if btn._charName == self._playerSelect then return end
+
+            if self._enemyHalfImage then
+                self._enemyHalfImage:removeFromParentAndCleanup(true)
+            end
+            self._enemyHalfImage = display.newSprite(charName .. '_half.png')
+            self._enemyHalfImage:setAnchorPoint(CCPoint(0, 0))
+            self._enemyHalfImage:setPosition(display.width -
+                self._enemyHalfImage:getContentSize().width - 10, 10)
+            self._enemyHalfImage:setFlipX(true)
+            self:addChild(self._enemyHalfImage, 1)
+
+            if self._enemyName then
+                self._enemyName:removeFromParentAndCleanup(true)
+            end
+            self._enemyName = display.newSprite(charName .. '_font.png')
+            self._enemyName:setAnchorPoint(CCPoint(0.5, 0))
+            self._enemyName:setPosition(display.width - 92, 20)
+            self:addChild(self._enemyName, 5)
+
+            if btn._clickTime >= 2 then
+                self._enemySelect = btn._charName
+                self:setEnemySelect(self._enemySelect)
+                if self._selectImg then
+                    self._selectImg:removeFromParentAndCleanup(true)
+                    self._selectImg = nil
+                end
+                log('1VS1 Enemy selected: ' .. btn._charName)
+            end
+        end
+        return
+    end
+
     if not self.enableCustomSelect and self._playerSelect then return end
 
     self.selectHero = btn._charName
-
     local fd = CCFadeOut:create(1.0)
     local seq = CCRepeatForever:create(transition.sequence({fd, fd:reverse()}))
 
@@ -398,20 +479,16 @@ function SelectLayer:setSelected(btn)
         if btn._clickTime >= 2 then
             self:setSelectHero(btn._charName)
             self._playerSelect = self.selectHero
-
             if not self.enableCustomSelect then
                 self._selectImg:removeFromParent()
                 self._selectImg = nil
-            else
-                if self._comLabel1 then
-                    self._comLabel1:runAction(seq)
-                end
+            elseif self._comLabel1 then
+                self._comLabel1:runAction(seq)
             end
         end
 
         self._heroHalfImage:removeFromParent()
         local charName = '#' .. btn._charName
-
         self._heroHalfImage = display.newSprite(charName .. '_half.png', 10, 10)
         self._heroHalfImage:setAnchorPoint(CCPoint(0, 0))
         self:addChild(self._heroHalfImage, 1)
@@ -421,44 +498,31 @@ function SelectLayer:setSelected(btn)
         self._heroName:setAnchorPoint(CCPoint(0.5, 0))
         self:addChild(self._heroName, 5)
     elseif not self._com1Select then
-        self._comSelector1:setDisplayFrame(
-            display.newSpriteFrame(self.selectHero .. '_small.png'))
-
+        self._comSelector1:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
         if btn._clickTime >= 2 then
             self._com1Select = self.selectHero
             self:setCom1Select(self._com1Select)
-
             self._comLabel1:stopAllActions()
             self._comLabel1:setOpacity(255)
-            self._comLabel1:setDisplayFrame(
-                display.newSpriteFrame('com_label2.png'))
+            self._comLabel1:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
         end
     elseif not self._com2Select then
-        self._comSelector2:setDisplayFrame(
-            display.newSpriteFrame(self.selectHero .. '_small.png'))
-
+        self._comSelector2:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
         if btn._clickTime >= 2 then
             self._com2Select = self.selectHero
             self:setCom2Select(self._com2Select)
-
             self._comLabel2:stopAllActions()
             self._comLabel2:setOpacity(255)
-            self._comLabel2:setDisplayFrame(
-                display.newSpriteFrame('com_label2.png'))
+            self._comLabel2:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
         end
     elseif not self._com3Select then
-        self._comSelector3:setDisplayFrame(
-            display.newSpriteFrame(self.selectHero .. '_small.png'))
-
+        self._comSelector3:setDisplayFrame(display.newSpriteFrame(self.selectHero .. '_small.png'))
         if btn._clickTime >= 2 then
             self._com3Select = self.selectHero
             self:setCom3Select(self._com3Select)
-
             self._comLabel3:stopAllActions()
             self._comLabel3:setOpacity(255)
-            self._comLabel3:setDisplayFrame(
-                display.newSpriteFrame('com_label2.png'))
-
+            self._comLabel3:setDisplayFrame(display.newSpriteFrame('com_label2.png'))
             self._selectImg:removeFromParent()
             self._selectImg = nil
         end
@@ -466,7 +530,9 @@ function SelectLayer:setSelected(btn)
 end
 
 function SelectLayer:noComSelect()
-    if self.is4v4Mode then
+    if self.isOneVsOne then
+        return self._enemySelect
+    elseif self.is4v4Mode then
         return self._com3Select
     elseif self.is3v3Mode then
         return self._com2Select

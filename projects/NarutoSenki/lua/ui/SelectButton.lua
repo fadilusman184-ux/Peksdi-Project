@@ -90,9 +90,16 @@ function SelectButton:click()
         end
 
         if self._selectLayer._playerSelect and
-            not self._selectLayer.enableCustomSelect then return end
+            not self._selectLayer.enableCustomSelect and
+            not (self._selectLayer.isOneVsOne and
+                 not self._selectLayer._enemySelect) then return end
 
-        if self._selectLayer:noComSelect() then return end
+        if not self._selectLayer.isOneVsOne and
+            self._selectLayer:noComSelect() then return end
+
+        if self._selectLayer.isOneVsOne and
+            self._selectLayer._playerSelect and
+            self._charName == self._selectLayer._playerSelect then return end
 
         for _, selectBtn in pairs(self._selectLayer.selectButtons) do
             if selectBtn ~= self then selectBtn._clickTime = 0 end
