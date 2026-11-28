@@ -121,8 +121,11 @@ void GameOver::listResult()
 	float resultScore = 0;
 	uint32_t killDead = currPlayer->getKillNum() - currPlayer->_deadNum;
 
-	// Verify that the game time is valid
-	if (_totalSecond != getGameLayer()->getTotalTime())
+	// Standard modes validate the full match clock. Boss is a short duel
+	// with its own Guardian lifecycle, so use the same result UI without
+	// applying the standard-mode anti-tamper exit check.
+	if (getGameMode() != GameMode::Boss &&
+		_totalSecond != getGameLayer()->getTotalTime())
 	{
 		SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(true);
 		Director::sharedDirector()->end();
@@ -144,7 +147,7 @@ void GameOver::listResult()
 			resultScore = ((killDead - ((_totalSecond / 60.0f - 10) * 4)) / 40) * 100;
 	}
 
-	if (_totalSecond < 1 * 60 + 5 && _isWin)
+	if (getGameMode() != GameMode::Boss && _totalSecond < 1 * 60 + 5 && _isWin)
 	{
 		SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(true);
 		Director::sharedDirector()->end();
@@ -257,8 +260,10 @@ void GameOver::listResult()
 
 	if (Cheats < kMaxCheats)
 	{
-		// Verify that the game total kills is valid
-		if ((akatsukiKill + konohaKill) != getGameLayer()->getTotalKills())
+		// Boss Guardian kills are intentionally excluded from the standard
+		// hero rows above, so the standard team-kill checksum is not applicable.
+		if (getGameMode() != GameMode::Boss &&
+			(akatsukiKill + konohaKill) != getGameLayer()->getTotalKills())
 		{
 			SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(true);
 			Director::sharedDirector()->end();

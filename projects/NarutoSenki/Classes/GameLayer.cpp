@@ -208,15 +208,18 @@ void GameLayer::initTileMap()
 {
 	setRand();
 
-	// 1 VS 1 uses its own compact duel map. The normal map pool is
-	// untouched, so every other mode keeps the original maps/layout.
-	if (getGameMode() == GameMode::OneVsOne)
+	// Duel modes use compact, dedicated maps. Keep the original 1v1 map
+	// unchanged and give Boss mode its own copy so it can be customized safely.
+	if (getGameMode() == GameMode::OneVsOne || getGameMode() == GameMode::Boss)
 	{
 		mapId = 1; // keep the original background/music set
-		currentMap = TMXTiledMap::create("Maps/1v1.tmx");
+		const char *duelMap = getGameMode() == GameMode::Boss
+			? "Maps/Boss.tmx"
+			: "Maps/1v1.tmx";
+		currentMap = TMXTiledMap::create(duelMap);
 		if (!currentMap)
 		{
-			CCMessageBox("Not found the 1 VS 1 map", "[Error] 1 VS 1 map");
+			CCMessageBox("Not found the duel map", "[Error] Duel map");
 			return;
 		}
 		addChild(currentMap, kMapOrder);
@@ -250,16 +253,13 @@ void GameLayer::initGard()
 		return;
 	}
 
-	if (playerGroup == Group::Konoha)
-	{
-		guardian->setPosition(Vec2(2800, 80));
-		guardian->setSpawnPoint(Vec2(2800, 80));
-	}
-	else
-	{
-		guardian->setPosition(Vec2(272, 80));
-		guardian->setSpawnPoint(Vec2(272, 80));
-	}
+	// The 48x10 duel map is 1536px wide. Spawn the Guardian on the
+	// opposite side of the player, safely inside the map boundaries.
+	const Vec2 guardianSpawn = playerGroup == Group::Konoha
+		? Vec2(1152, 80)
+		: Vec2(320, 80);
+	guardian->setPosition(guardianSpawn);
+	guardian->setSpawnPoint(guardianSpawn);
 
 	addChild(guardian, -guardian->getPositionY());
 	guardian->setLV(6);
