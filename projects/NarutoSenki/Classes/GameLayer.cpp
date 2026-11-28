@@ -864,6 +864,19 @@ void GameLayer::cleanupAfterReturn(float dt)
 
 void GameLayer::onLeft()
 {
+	// Boss mode returns to the Lua menu while the gameplay scene is still
+	// alive underneath the result scene. Do not unload character/Guardian
+	// sprite frames or destroy Guardian nodes here: those objects can still
+	// be referenced by the active scene during the fade transition.
+	// Let the scene replacement release its children naturally.
+	if (getGameMode() == GameMode::Boss)
+	{
+		SimpleAudioEngine::sharedEngine()->stopAllEffects();
+		SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(true);
+		lua_call_func(UiFlowKeys::kOnGameOver);
+		return;
+	}
+
 	CCNotificationCenter::sharedNotificationCenter()->purgeNotificationCenter();
 
 	CCArray *childArray = getChildren();
